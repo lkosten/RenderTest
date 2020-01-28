@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <optional>
 #include <map>
 #include <stdexcept>
 #include <functional>
@@ -34,6 +35,8 @@ private:
   GLFWwindow *window;
   VkInstance instance;
   VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+  VkDevice device;
+
 
   void initWindow() {
     glfwInit(); // initialize glfw library;
@@ -47,6 +50,11 @@ private:
   void initVulkan() {
     createInstance();
     pickPhysicalDevice();
+    createLogicalDevice();
+  }
+
+  void createLogicalDevice() {
+
   }
 
   void pickPhysicalDevice() {
@@ -190,6 +198,42 @@ private:
 
     return true;
   }
+
+  struct QueueFamilyIndices {
+    std::optional<uint32_t> graphicsFamily;
+
+    bool isComplete() {
+      return graphicsFamily.has_value();
+    }
+  };
+
+  QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
+    QueueFamilyIndices indices;
+
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+    int i = 0;
+    for (const auto& queueFamily : queueFamilies) {
+      if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+        indices.graphicsFamily = i;
+      }
+
+      i++;
+    }
+
+    return indices;
+  }
+
+  bool isDeviceSuitable(VkPhysicalDevice device) {
+    QueueFamilyIndices indices = findQueueFamilies(device);
+
+    return indices.isComplete();
+  }
+
 };
 
 int main() {
