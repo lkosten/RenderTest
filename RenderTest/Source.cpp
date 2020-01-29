@@ -26,6 +26,9 @@ private:
   const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
   };
+  const std::vector<const char*> deviceExtensions = {
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME
+  };
 
   #ifdef NDEBUG
   const bool enableValidationLayers = false;
@@ -124,7 +127,7 @@ private:
       candidates.emplace(rateDeviceSuitability(device), device);
     }
 
-    if (candidates.rbegin()->first > 0 || !isDeviceSuitable(candidates.rbegin()->second)) {
+    if (candidates.rbegin()->first > 0 && isDeviceSuitable(candidates.rbegin()->second)) {
       physicalDevice = candidates.rbegin()->second;
     }
     else {
@@ -293,7 +296,23 @@ private:
   bool isDeviceSuitable(VkPhysicalDevice device) {
     QueueFamilyIndices indices = findQueueFamilies(device);
 
-    return indices.isComplete();
+    return indices.isComplete() && checkDeviceExtensionSupport(device);
+  }
+
+  bool checkDeviceExtensionSupport(VkPhysicalDevice device) {
+    uint32_t extensionCount;
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+
+    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+
+    std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
+
+    for (const auto& extension : availableExtensions) {
+      requiredExtensions.erase(extension.extensionName);
+    }
+
+    return requiredExtensions.empty();
   }
 };
 
